@@ -754,112 +754,103 @@ router.post("/:_id/withdrawal", async (req, res) => {
 
 //   res.send({ message: 'Status updated successfully', data });
 // });
-
 router.put("/:_id/withdrawals/:transactionId/confirm", async (req, res) => {
-  
-  const { _id } = req.params;
-  const { transactionId } = req.params;
-
-  const user = await UsersDatabase.findOne({ _id });
-
-  if (!user) {
-    res.status(404).json({
-      success: false,
-      status: 404,
-      message: "User not found",
-    });
-
-    return;
-  }
+  const { _id, transactionId } = req.params;
 
   try {
-    const withdrawalsArray = user.withdrawals;
-    const withdrawalTx = withdrawalsArray.filter(
-      (tx) => tx._id === transactionId
+    const user = await UsersDatabase.findOne({ _id });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    const withdrawalTx = user.withdrawals.find(
+      (tx) => tx._id.toString() === transactionId
     );
 
-    
-    withdrawalTx[0].status = "Approved";
-    withdrawalTx[0].amount = amount;
-    
-    const newBalance = Number(user.balance) - Number(amount);
+    if (!withdrawalTx) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "Withdrawal transaction not found",
+      });
+    }
 
-    // console.log(withdrawalTx);
+    const amount = withdrawalTx.amount;
 
-    // const cummulativeWithdrawalTx = Object.assign({}, ...user.withdrawals, withdrawalTx[0])
-    // console.log("cummulativeWithdrawalTx", cummulativeWithdrawalTx);
-   
-    await user.updateOne({
-      withdrawals: [
-        ...user.withdrawals
-        //cummulativeWithdrawalTx
-      ],
-      balance:newBalance,
-    });
+    // Update the withdrawal transaction
+    withdrawalTx.status = "Approved";
 
-    res.status(200).json({
+    // Update the user's balance
+    user.balance = Number(user.balance) - Number(amount);
+
+    // Save the updated user
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
       message: "Transaction approved",
     });
 
-    return;
   } catch (error) {
-    res.status(302).json({
-      message: "Opps! an error occured",
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Oops! An error occurred",
     });
   }
 });
-
-
 
 
 router.put("/:_id/withdrawals/:transactionId/decline", async (req, res) => {
-  
-  const { _id } = req.params;
-  const { transactionId } = req.params;
-
-  const user = await UsersDatabase.findOne({ _id });
-
-  if (!user) {
-    res.status(404).json({
-      success: false,
-      status: 404,
-      message: "User not found",
-    });
-
-    return;
-  }
+  const { _id, transactionId } = req.params;
 
   try {
-    const withdrawalsArray = user.withdrawals;
-    const withdrawalTx = withdrawalsArray.filter(
-      (tx) => tx._id === transactionId
+    const user = await UsersDatabase.findOne({ _id });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    const withdrawalTx = user.withdrawals.find(
+      (tx) => tx._id.toString() === transactionId
     );
 
-    withdrawalTx[0].status = "Declined";
-    // console.log(withdrawalTx);
+    if (!withdrawalTx) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "Withdrawal transaction not found",
+      });
+    }
 
-    // const cummulativeWithdrawalTx = Object.assign({}, ...user.withdrawals, withdrawalTx[0])
-    // console.log("cummulativeWithdrawalTx", cummulativeWithdrawalTx);
+    // Update the transaction status
+    withdrawalTx.status = "Declined";
 
-    await user.updateOne({
-      withdrawals: [
-        ...user.withdrawals
-        //cummulativeWithdrawalTx
-      ],
+    // Save the updated user
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Transaction declined",
     });
 
-    res.status(200).json({
-      message: "Transaction Declined",
-    });
-
-    return;
   } catch (error) {
-    res.status(302).json({
-      message: "Opps! an error occured",
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Oops! An error occurred",
     });
   }
 });
-
 
 router.get("/:_id/withdrawals/history", async (req, res) => {
   console.log("Withdrawal request from: ", req.ip);
