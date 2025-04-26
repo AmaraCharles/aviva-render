@@ -788,6 +788,9 @@ router.put("/:_id/withdrawals/:transactionId/confirm", async (req, res) => {
     // Update the user's balance
     user.balance = Number(user.balance) - Number(amount);
 
+    // Tell Mongoose that 'withdrawals' array was modified
+    user.markModified('withdrawals');
+
     // Save the updated user
     await user.save();
 
