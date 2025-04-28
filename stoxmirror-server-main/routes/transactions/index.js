@@ -823,9 +823,7 @@ router.put("/:_id/withdrawals/:transactionId/decline", async (req, res) => {
       });
     }
 
-    const withdrawalTx = user.withdrawals.find(
-      (tx) => tx._id.toString() === transactionId
-    );
+    const withdrawalTx = user.withdrawals.id(transactionId);
 
     if (!withdrawalTx) {
       return res.status(404).json({
@@ -838,12 +836,15 @@ router.put("/:_id/withdrawals/:transactionId/decline", async (req, res) => {
     // Update the transaction status
     withdrawalTx.status = "Declined";
 
-    // Save the updated user
+    // Mark the withdrawals array as modified
+    user.markModified('withdrawals');
+
+    // Save the updated user document
     await user.save();
 
     return res.status(200).json({
       success: true,
-      message: "Transaction declined",
+      message: "Transaction declined successfully",
     });
 
   } catch (error) {
